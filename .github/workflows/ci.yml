@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements_test.txt
+      - run: ruff check custom_components tests
+
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements_test.txt
+      # pip resolves an older pytest-homeassistant-custom-component release
+      # on 3.12 (homeassistant itself has moved on to requiring newer
+      # Pythons), and that older release doesn't have the newer release's
+      # hard dependency on aiodns. On that older release, pycares (pulled in
+      # by aiodns) leaves a background "_run_safe_shutdown_loop" thread
+      # running past test teardown, which races with the harness's
+      # lingering-thread check and flakes tests that don't otherwise fail:
+      # https://github.com/MatthewFlamm/pytest-homeassistant-custom-component/issues/219
+      # Our tests never do real DNS lookups (everything goes through
+      # aioclient_mock), so it's safe to drop pycares there. The newer
+      # release resolved on 3.13 requires aiodns for its own resolver-mocking
+      # fixture, so leave it alone on that job.
+      - if: matrix.python-version == '3.12'
+        run: pip uninstall -y pycares aiodns
+      - run: pytest tests --cov=custom_components.harvst --cov-report=term-missing
+
+  hassfest:
+    name: Hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    name: HACS validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+          # This repo is meant to be added as a HACS *custom* repository
+          # (see README), not submitted to the official HACS default store,
+          # so skip the checks that only apply to that submission process.
+          ignore: brands topics

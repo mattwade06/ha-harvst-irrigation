@@ -1,0 +1,62 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to your Harvst control panel",
+        "description": "Enter the local network address of your Harvst irrigation control panel.",
+        "data": {
+          "host": "Host or IP address",
+          "username": "Username (only if you set a device password)",
+          "password": "Password (only if you set a device password)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Couldn't reach the control panel at that address.",
+      "invalid_auth": "The control panel rejected that username/password.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This control panel is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Harvst options",
+        "data": {
+          "zone_max_runtime": "Zone safety cutoff (seconds)"
+        },
+        "data_description": {
+          "zone_max_runtime": "Sent to the panel itself every time a zone is turned on, so the panel's own firmware enforces it - the zone will stop on its own after this many seconds even if Home Assistant goes offline, crashes, or never sends a turn-off command mid-cycle."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "temperature": {
+        "name": "Temperature"
+      },
+      "current": {
+        "name": "Current draw"
+      }
+    },
+    "binary_sensor": {
+      "zone_watering": {
+        "name": "Zone {zone} watering"
+      },
+      "pump_running": {
+        "name": "Pump running"
+      }
+    },
+    "switch": {
+      "zone": {
+        "name": "Zone {zone}"
+      },
+      "aux": {
+        "name": "Aux {aux}"
+      }
+    }
+  }
+}
