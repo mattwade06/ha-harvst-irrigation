@@ -33,8 +33,10 @@ async def test_pump_running_binary_sensor_reflects_telemetry(hass):
 
     sensor = HarvstPumpRunningBinarySensor(coordinator, "entry123")
 
-    assert sensor.is_on is None
-    assert sensor.available is False
+    # Defaults to "not running" (available) rather than unknown - see
+    # coordinator.py for why there's no real "unknown" state to start in.
+    assert sensor.is_on is False
+    assert sensor.available is True
 
     coordinator.pump_running = True
     assert sensor.is_on is True

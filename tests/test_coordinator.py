@@ -138,5 +138,13 @@ async def test_consume_without_pump_state_leaves_zones_alone(hass):
     lines = [b"event: new_readings\n", b'data: {"te": 22}\n', b"\n"]
     await coordinator._consume(_FakeResponse(lines))
 
-    assert coordinator.pump_running is None
+    assert coordinator.pump_running is False
     assert coordinator.zone_watering[1] is True
+
+
+def test_pump_running_defaults_to_false(hass):
+    client = MagicMock()
+    client.host = "192.168.1.140"
+    coordinator = HarvstCoordinator(hass, client)
+
+    assert coordinator.pump_running is False

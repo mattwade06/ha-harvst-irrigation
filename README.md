@@ -57,7 +57,11 @@ If your panel has a device password set (Settings page → "Device WiFi password
 itself), enter it as the username/password during setup; leave both blank otherwise.
 
 The panel's address is fully configurable in the integration's config flow — it doesn't need to be
-`192.168.1.140`, that's just this developer's greenhouse.
+`192.168.1.140`, that's just this developer's greenhouse. If it changes later (e.g. a DHCP
+reassignment), you don't need to remove and re-add the integration: go to **Settings → Devices &
+services → Harvst Irrigation → ⋮ → Reconfigure** and enter the new address. Reconfigure is for
+pointing at the *same* panel under a new address — it checks the panel's device ID hasn't changed
+and refuses to proceed if it has, since that means the address now points at different hardware.
 
 ## Known limitations
 

@@ -62,9 +62,11 @@ class HarvstPumpRunningBinarySensor(HarvstEntity, BinarySensorEntity):
         self._attr_translation_key = "pump_running"
 
     @property
-    def is_on(self) -> bool | None:
+    def is_on(self) -> bool:
         return self.coordinator.pump_running
 
     @property
     def available(self) -> bool:
-        return super().available and self.coordinator.pump_running is not None
+        # pump_running defaults to False rather than unknown (see
+        # coordinator.py), so this only needs to track the SSE connection.
+        return super().available

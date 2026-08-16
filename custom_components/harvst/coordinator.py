@@ -86,7 +86,13 @@ class HarvstCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.client = client
         self.zone_watering: dict[int, bool] = dict.fromkeys(range(1, ZONE_COUNT + 1), False)
-        self.pump_running: bool | None = None
+        # The panel only sends `pump_state` on the single event right after
+        # a change, not on every update - so there's no "current" value to
+        # ask for on startup. Default to "not running" rather than unknown,
+        # since the pump is idle the overwhelming majority of the time; the
+        # tradeoff is a HA restart mid-cycle briefly under-reports until the
+        # next real state change comes in.
+        self.pump_running: bool = False
         self._sse_task: asyncio.Task | None = None
 
     async def async_start(self) -> None:

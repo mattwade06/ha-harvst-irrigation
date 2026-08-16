@@ -9,6 +9,15 @@
           "username": "Username (only if you set a device password)",
           "password": "Password (only if you set a device password)"
         }
+      },
+      "reconfigure": {
+        "title": "Update Harvst control panel connection",
+        "description": "Update the address or credentials for this control panel - for example if its IP address changed. This must still be the same physical panel; to add a different one, set up a new integration entry instead.",
+        "data": {
+          "host": "Host or IP address",
+          "username": "Username (only if you set a device password)",
+          "password": "Password (only if you set a device password)"
+        }
       }
     },
     "error": {
@@ -17,7 +26,9 @@
       "unknown": "Unexpected error."
     },
     "abort": {
-      "already_configured": "This control panel is already configured."
+      "already_configured": "This control panel is already configured.",
+      "reconfigure_successful": "Connection details updated.",
+      "wrong_device": "That address answered with a different panel's device ID. Reconfigure only updates how to reach the same panel - set up a new integration entry to add a different one."
     }
   },
   "options": {
@@ -47,7 +58,11 @@
         "name": "Zone {zone} watering"
       },
       "pump_running": {
-        "name": "Pump running"
+        "name": "Pump running",
+        "state": {
+          "off": "Ready",
+          "on": "Pumping"
+        }
       }
     },
     "switch": {
