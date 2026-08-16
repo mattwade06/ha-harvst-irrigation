@@ -36,7 +36,6 @@ import logging
 from typing import Any
 
 import aiohttp
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
@@ -50,7 +49,9 @@ _MAX_BACKOFF = 300
 _SSE_IDLE_TIMEOUT = 120
 
 
-def reading(payload: dict[str, Any] | None, key: str, sentinel: int = UNAVAILABLE_SENTINEL) -> float | None:
+def reading(
+    payload: dict[str, Any] | None, key: str, sentinel: int = UNAVAILABLE_SENTINEL
+) -> float | None:
     """Pull a numeric reading out of an SSE payload, honoring the sentinel.
 
     Most channels use -13 for "not connected". The `cc` (current draw)
@@ -97,7 +98,9 @@ class HarvstCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         url = f"{self.client.base_url}/events"
         while True:
             try:
-                timeout = aiohttp.ClientTimeout(total=None, sock_connect=15, sock_read=_SSE_IDLE_TIMEOUT)
+                timeout = aiohttp.ClientTimeout(
+                    total=None, sock_connect=15, sock_read=_SSE_IDLE_TIMEOUT
+                )
                 async with self.client.session.get(
                     url, headers={"Accept": "text/event-stream"}, timeout=timeout
                 ) as resp:

@@ -4,12 +4,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import voluptuous as vol
-
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import voluptuous as vol
 
 from .api import HarvstApiError, HarvstAuthError, HarvstClient
 from .const import CONF_ZONE_RUNTIME, DEFAULT_ZONE_MAX_RUNTIME, DOMAIN
@@ -58,7 +57,9 @@ class HarvstConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 await self.async_set_unique_id(device_id)
                 self._abort_if_unique_id_configured(updates=user_input)
-                return self.async_create_entry(title=f"Harvst ({user_input[CONF_HOST]})", data=user_input)
+                return self.async_create_entry(
+                    title=f"Harvst ({user_input[CONF_HOST]})", data=user_input
+                )
 
         return self.async_show_form(step_id="user", data_schema=STEP_USER_SCHEMA, errors=errors)
 

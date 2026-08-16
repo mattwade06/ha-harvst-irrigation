@@ -2,7 +2,11 @@
 from unittest.mock import MagicMock
 
 from custom_components.harvst.coordinator import HarvstCoordinator
-from custom_components.harvst.sensor import CURRENT_DESCRIPTION, TEMPERATURE_DESCRIPTION, HarvstSensor
+from custom_components.harvst.sensor import (
+    CURRENT_DESCRIPTION,
+    TEMPERATURE_DESCRIPTION,
+    HarvstSensor,
+)
 
 
 async def test_temperature_sensor_reads_te_field(hass):
