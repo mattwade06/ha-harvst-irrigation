@@ -50,4 +50,4 @@ jobs:
           # This repo is meant to be added as a HACS *custom* repository
           # (see README), not submitted to the official HACS default store,
           # so skip the checks that only apply to that submission process.
-          ignore: brands,topics
+          ignore: brands topics
