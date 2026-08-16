@@ -1,9 +1,12 @@
-"""Binary sensors reporting whether a zone is currently watering.
+"""Binary sensors reporting pump/zone watering state.
 
-The control panel does not broadcast zone-running state over its /events
-SSE feed, so this reflects the state tracked locally by the matching
-HarvstZoneSwitch (see switch.py) whenever it issues a water-on/water-off
-command or a timed run expires.
+The panel doesn't say *which* zone is watering over its /events SSE feed,
+but it does broadcast a global `pump_state` field (confirmed by live
+testing) on the event immediately following a state change - see
+coordinator.py. HarvstPumpRunningBinarySensor reflects that real telemetry
+directly. HarvstZoneWateringBinarySensor still reflects the coordinator's
+locally-tracked per-zone state (see switch.py), since the panel has one
+physical pump for both zones and pump_state can't tell them apart.
 """
 from __future__ import annotations
 
@@ -20,10 +23,12 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: HarvstConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = entry.runtime_data.coordinator
-    async_add_entities(
+    entities: list[BinarySensorEntity] = [
         HarvstZoneWateringBinarySensor(coordinator, entry.entry_id, zone)
         for zone in range(1, ZONE_COUNT + 1)
-    )
+    ]
+    entities.append(HarvstPumpRunningBinarySensor(coordinator, entry.entry_id))
+    async_add_entities(entities)
 
 
 class HarvstZoneWateringBinarySensor(HarvstEntity, BinarySensorEntity):
@@ -45,3 +50,21 @@ class HarvstZoneWateringBinarySensor(HarvstEntity, BinarySensorEntity):
     def available(self) -> bool:
         # Local state, not dependent on the SSE feed being healthy.
         return True
+
+
+class HarvstPumpRunningBinarySensor(HarvstEntity, BinarySensorEntity):
+    """Is the physical pump currently running, per the panel's own telemetry."""
+
+    _attr_device_class = BinarySensorDeviceClass.RUNNING
+
+    def __init__(self, coordinator, entry_id: str) -> None:
+        super().__init__(coordinator, f"{entry_id}_pump_running")
+        self._attr_translation_key = "pump_running"
+
+    @property
+    def is_on(self) -> bool | None:
+        return self.coordinator.pump_running
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.coordinator.pump_running is not None

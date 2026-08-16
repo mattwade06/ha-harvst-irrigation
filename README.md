@@ -14,7 +14,8 @@ below for exactly what was found and how.
 |---|---|---|
 | Temperature | `sensor` | Wired "silver bullet" probe (`T1`), °C |
 | Current draw | `sensor` | Instantaneous draw in mA, disabled by default |
-| Zone 1 / Zone 2 watering | `binary_sensor` | On while a zone is actively watering |
+| Zone 1 / Zone 2 watering | `binary_sensor` | On while a zone is actively watering (locally tracked, see below) |
+| Pump running | `binary_sensor` | On/off straight from the panel's own `pump_state` telemetry |
 | Zone 1 / Zone 2 | `switch` | Turns a zone's pump + valve on/off — use these with an irrigation blueprint |
 | Aux 1 / Aux 2 / Aux 3 | `switch` | The panel's general-purpose relay outputs, disabled by default |
 
@@ -30,6 +31,16 @@ switches. Point the blueprint's "pump switch" field at one of the Aux switches *
 wired that aux relay to your pump directly (see [Aux switches and the
 pump](#aux-switches-and-the-pump) below) — otherwise leave it unset, since Zone 1/2 already run the
 pump themselves.
+
+### Zone safety cutoff
+
+Every `switch.turn_on` call sends a `time=` value straight to the panel itself, not just to Home
+Assistant — so the cutoff is enforced by the panel's own firmware, not by anything running on your
+HA instance. If HA crashes, loses network, or never gets around to sending a turn-off command
+mid-cycle, the zone still stops on its own once that many seconds pass. Set how long that is under
+**Settings → Devices & services → Harvst → Configure** ("Zone safety cutoff"), default 1 hour.
+Automations that manage their own timing (like the blueprint above) still turn zones off earlier
+than this on their own — this setting is just the worst-case backstop.
 
 ## Installation via HACS
 
@@ -50,19 +61,19 @@ The panel's address is fully configurable in the integration's config flow — i
 
 ## Known limitations
 
-- **Zone "off" is inferred.** The panel's UI only exposes buttons to start a timed watering run
-  (`state=on`); there's no "stop" button anywhere in the web UI to observe. This integration calls
-  the natural counterpart (`state=off`) when you turn a zone switch off. If your firmware doesn't
-  support it, the zone will still stop on its own once the safety-cap runtime elapses.
 - **No standalone pump control.** The panel always fires the pump together with a zone's valve
   when you run a zone — there's no "pump only" endpoint anywhere in its UI. The only way to control
   the pump independently of a zone is the panel's own mechanism: assign one of the 3 aux relays to
   "Pump zone 1" or "Pump zone 2" on that aux's settings page, then that aux's switch becomes a
   standalone pump control (see below).
-- **Zone watering status is tracked locally, not read from the device.** The panel's live event
-  feed doesn't include a "zone is currently running" flag, so the `binary_sensor`/`switch` state
-  for a zone reflects commands this integration has sent (and their configured duration), not a
-  live readback from the hardware.
+- **Zone watering status is tracked locally, not read from the device — but pump state is real.**
+  The panel's live event feed doesn't say *which* zone is running (it has one physical pump serving
+  both), so per-zone `binary_sensor`/`switch` state reflects commands this integration has sent, not
+  a live per-zone readback. The separate "Pump running" `binary_sensor`, however, is read straight
+  from the panel's own `pump_state` telemetry, confirmed by live testing (see below) — and this
+  integration also uses it to clear a zone's watering state the moment the pump actually stops,
+  rather than waiting out the switch's own timer, so a backpressure fault or over-current cutoff
+  shows up in Home Assistant immediately instead of after the fact.
 
 ### Aux switches and the pump
 
@@ -94,11 +105,26 @@ no decompilation or credentials involved):
   reading is available, matching the `INT32_MAX` sentinels used for "unset" elsewhere on the
   panel's own Settings page (e.g. "Pump back pressure: 1000 / 2147483647").
 
+  A `pump_state` field (1/0) also shows up on the single event immediately following a pump state
+  change - confirmed by live testing:
+
+  ```
+  -> GET /control?device=pump&state=on&zone=1&time=30
+  <- event: new_readings / data: {"pump_state":1, ...}
+  -> GET /control?device=pump&state=off&zone=1
+  <- event: new_readings / data: {"pump_state":0, ...}
+  ```
+
+  It doesn't appear on every event, only on the one right after a change, and it's global (one
+  pump, no per-zone breakdown) - see `binary_sensor.pump_running` above.
+
 - `GET /w1`, `GET /w2` — Zone 1 / Zone 2 settings pages. The "Water now" buttons on these pages are
   plain links: `/control?device=pump&state=on&zone={1|2}&time={10|20|30|60|300}` (seconds). This
-  integration's zone switches use the same call with a configurable duration, and call the
-  `state=off` counterpart to stop early. `/control?do=clear1` / `clear2` clears the "last watered"
-  timestamp shown on those pages.
+  integration's zone switches use the same call with a configurable duration, and call
+  `state=off&zone={1|2}` to stop early — confirmed working by live testing: turning a zone on for 30s
+  and calling `state=off` after ~15s produced an immediate `pump_state:0` event and updated the
+  zone's "Last watered" timestamp, rather than waiting out the full 30 seconds.
+  `/control?do=clear1` / `clear2` clears the "last watered" timestamp shown on those pages.
 
 - `GET /x1`, `GET /x2`, `GET /x3` — Aux relay settings pages. Each has an on/off toggle wired to
   `/control?do=x1On` / `/control?do=x1Off` (and `x2`/`x3` equivalents) via a small inline
@@ -113,9 +139,9 @@ no decompilation or credentials involved):
   temperature probe is a "Silver bullet temperature sensor" and that zone valves are driven as
   "Latching valve controller" devices on the same bus.
 
-Manual triggering of the pump/valve endpoints wasn't exercised as part of writing this integration
-(it's real irrigation hardware) — the `state=on`/`state=off` and aux `On`/`Off` request shapes come
-directly from the panel's own UI markup, not from live testing. If your firmware behaves
+The zone `state=on`/`state=off` sequence above and the aux `On`/`Off` toggles have both been
+exercised against real hardware; everything else (settings parsing, sensor field mapping) comes
+from reading the panel's own UI markup rather than live testing. If your firmware behaves
 differently, please open an issue with what you're seeing.
 
 ## Development

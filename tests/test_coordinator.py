@@ -101,3 +101,42 @@ def test_set_zone_watering_updates_state(hass):
     assert coordinator.zone_watering[1] is False
     coordinator.set_zone_watering(1, True)
     assert coordinator.zone_watering[1] is True
+
+
+async def test_consume_tracks_pump_state_on(hass):
+    client = MagicMock()
+    client.host = "192.168.1.140"
+    coordinator = HarvstCoordinator(hass, client)
+
+    lines = [b"event: new_readings\n", b'data: {"pump_state": 1, "te": 22}\n', b"\n"]
+    await coordinator._consume(_FakeResponse(lines))
+
+    assert coordinator.pump_running is True
+
+
+async def test_consume_pump_state_off_clears_all_zones(hass):
+    client = MagicMock()
+    client.host = "192.168.1.140"
+    coordinator = HarvstCoordinator(hass, client)
+    coordinator.set_zone_watering(1, True)
+    coordinator.set_zone_watering(2, True)
+
+    lines = [b"event: new_readings\n", b'data: {"pump_state": 0, "te": 22}\n', b"\n"]
+    await coordinator._consume(_FakeResponse(lines))
+
+    assert coordinator.pump_running is False
+    assert coordinator.zone_watering[1] is False
+    assert coordinator.zone_watering[2] is False
+
+
+async def test_consume_without_pump_state_leaves_zones_alone(hass):
+    client = MagicMock()
+    client.host = "192.168.1.140"
+    coordinator = HarvstCoordinator(hass, client)
+    coordinator.set_zone_watering(1, True)
+
+    lines = [b"event: new_readings\n", b'data: {"te": 22}\n', b"\n"]
+    await coordinator._consume(_FakeResponse(lines))
+
+    assert coordinator.pump_running is None
+    assert coordinator.zone_watering[1] is True

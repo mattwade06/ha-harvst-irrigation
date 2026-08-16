@@ -23,10 +23,22 @@ the layout of its /settings page:
 
 `-13` is the panel's sentinel for "no sensor connected on this channel".
 
-The panel does not appear to broadcast whether a zone is currently
-watering, so that state is tracked locally in `zone_watering` below,
-set by the switch entities (HarvstZoneSwitch) whenever they issue a
-command, so every entity can read it from one place.
+The panel does not distinguish which zone is watering, but it does
+broadcast a `pump_state` field (1/0) on the event immediately following
+a state change, confirmed by live testing:
+
+    -> GET /control?device=pump&state=on&zone=1&time=30
+    <- event: new_readings / data: {"pump_state":1, ...}
+    -> GET /control?device=pump&state=off&zone=1
+    <- event: new_readings / data: {"pump_state":0, ...}
+
+`pump_state` is global (one physical pump serves both zones), so which
+*zone* is watering is still tracked locally in `zone_watering` below, set
+by the switch entities (HarvstZoneSwitch) whenever they issue a command.
+But `pump_state:0` is real hardware confirmation that watering has
+stopped - including cases the switch's own timer wouldn't catch, like a
+backpressure fault or over-current shutdown - so it's used here to clear
+`zone_watering` immediately rather than waiting for the switch's timer.
 """
 from __future__ import annotations
 
@@ -74,6 +86,7 @@ class HarvstCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.client = client
         self.zone_watering: dict[int, bool] = dict.fromkeys(range(1, ZONE_COUNT + 1), False)
+        self.pump_running: bool | None = None
         self._sse_task: asyncio.Task | None = None
 
     async def async_start(self) -> None:
@@ -138,4 +151,16 @@ class HarvstCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 except ValueError:
                     _LOGGER.debug("Ignoring malformed new_readings payload: %s", data_str)
                     continue
-                self.async_set_updated_data(payload)
+                self._handle_payload(payload)
+
+    def _handle_payload(self, payload: dict[str, Any]) -> None:
+        if "pump_state" in payload:
+            self.pump_running = bool(payload["pump_state"])
+            if not self.pump_running:
+                # Real hardware confirmation the pump has stopped - clear
+                # every zone rather than waiting on the switch's own timer,
+                # since this also catches the pump stopping for reasons a
+                # timer wouldn't (backpressure fault, over-current cutoff).
+                for zone in self.zone_watering:
+                    self.zone_watering[zone] = False
+        self.async_set_updated_data(payload)

@@ -25,7 +25,10 @@
       "init": {
         "title": "Harvst options",
         "data": {
-          "zone_max_runtime": "Maximum zone run time (seconds) when turned on without an automation-controlled turn off"
+          "zone_max_runtime": "Zone safety cutoff (seconds)"
+        },
+        "data_description": {
+          "zone_max_runtime": "Sent to the panel itself every time a zone is turned on, so the panel's own firmware enforces it - the zone will stop on its own after this many seconds even if Home Assistant goes offline, crashes, or never sends a turn-off command mid-cycle."
         }
       }
     }
@@ -42,6 +45,9 @@
     "binary_sensor": {
       "zone_watering": {
         "name": "Zone {zone} watering"
+      },
+      "pump_running": {
+        "name": "Pump running"
       }
     },
     "switch": {
