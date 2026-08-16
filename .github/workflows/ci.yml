@@ -30,6 +30,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -r requirements_test.txt
+      # pycares (pulled in by aiodns, a homeassistant dependency) leaves a
+      # background "_run_safe_shutdown_loop" thread around after tests that
+      # open a real aiohttp session, which races with
+      # pytest-homeassistant-custom-component's lingering-thread check and
+      # flakes tests that don't otherwise fail:
+      # https://github.com/MatthewFlamm/pytest-homeassistant-custom-component/issues/219
+      # Our tests never do real DNS lookups (everything goes through
+      # aioclient_mock), so drop pycares and let aiohttp fall back to the
+      # plain asyncio resolver instead.
+      - run: pip uninstall -y pycares aiodns
       - run: pytest tests --cov=custom_components.harvst --cov-report=term-missing
 
   hassfest:
