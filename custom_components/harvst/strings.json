@@ -36,12 +36,22 @@
       "init": {
         "title": "Harvst options",
         "data": {
+          "host": "Host or IP address",
+          "username": "Username (only if you set a device password)",
+          "password": "Password (only if you set a device password)",
           "zone_max_runtime": "Zone safety cutoff (seconds)"
         },
         "data_description": {
+          "host": "Change this if the panel's address changed, e.g. a new DHCP lease. Must still be the same physical panel.",
           "zone_max_runtime": "Sent to the panel itself every time a zone is turned on, so the panel's own firmware enforces it - the zone will stop on its own after this many seconds even if Home Assistant goes offline, crashes, or never sends a turn-off command mid-cycle."
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Couldn't reach the control panel at that address.",
+      "invalid_auth": "The control panel rejected that username/password.",
+      "wrong_device": "That address answered with a different panel's device ID - this only updates how to reach the same panel. Set up a new integration entry to add a different one.",
+      "unknown": "Unexpected error."
     }
   },
   "entity": {

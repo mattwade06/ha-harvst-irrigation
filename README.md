@@ -58,10 +58,11 @@ itself), enter it as the username/password during setup; leave both blank otherw
 
 The panel's address is fully configurable in the integration's config flow — it doesn't need to be
 `192.168.1.140`, that's just this developer's greenhouse. If it changes later (e.g. a DHCP
-reassignment), you don't need to remove and re-add the integration: go to **Settings → Devices &
-services → Harvst Irrigation → ⋮ → Reconfigure** and enter the new address. Reconfigure is for
-pointing at the *same* panel under a new address — it checks the panel's device ID hasn't changed
-and refuses to proceed if it has, since that means the address now points at different hardware.
+reassignment), you don't need to remove and re-add the integration: click **Configure** on the
+integration (**Settings → Devices & services → Harvst Irrigation → ⚙**) and update the host field
+there, right above the zone safety cutoff. Either way you get there — Configure, or the separate
+Reconfigure item under **⋮** — updating the address checks the panel's device ID hasn't changed and
+refuses to proceed if it has, since that means the address now points at different hardware.
 
 ## Known limitations
 
