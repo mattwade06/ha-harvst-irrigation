@@ -77,6 +77,14 @@ async def test_reconfigure_updates_host(hass, aioclient_mock):
     assert result2["reason"] == "reconfigure_successful"
     assert entry.data["host"] == NEW_HOST
 
+    # A successful reconfigure schedules a real entry reload, which starts a
+    # live HarvstCoordinator (and its background SSE task) against the new
+    # host. Let that finish, then unload so the task gets cancelled cleanly
+    # rather than left running past the end of the test.
+    await hass.async_block_till_done()
+    await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+
 
 async def test_reconfigure_rejects_different_device(hass, aioclient_mock):
     entry = MockConfigEntry(domain=DOMAIN, unique_id="D01992BD9710", data={"host": HOST})
