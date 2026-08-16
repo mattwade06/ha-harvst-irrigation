@@ -1,0 +1,56 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to your Harvst control panel",
+        "description": "Enter the local network address of your Harvst irrigation control panel.",
+        "data": {
+          "host": "Host or IP address",
+          "username": "Username (only if you set a device password)",
+          "password": "Password (only if you set a device password)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Couldn't reach the control panel at that address.",
+      "invalid_auth": "The control panel rejected that username/password.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This control panel is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Harvst options",
+        "data": {
+          "zone_max_runtime": "Maximum zone run time (seconds) when turned on without an automation-controlled turn off"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "temperature": {
+        "name": "Temperature"
+      },
+      "current": {
+        "name": "Current draw"
+      }
+    },
+    "binary_sensor": {
+      "zone_watering": {
+        "name": "Zone {zone} watering"
+      }
+    },
+    "switch": {
+      "zone": {
+        "name": "Zone {zone}"
+      },
+      "aux": {
+        "name": "Aux {aux}"
+      }
+    }
+  }
+}
